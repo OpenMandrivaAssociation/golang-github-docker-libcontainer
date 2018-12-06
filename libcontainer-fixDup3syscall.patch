@@ -1,0 +1,22 @@
+--- libcontainer-c9643688cb73c2588a9c9b14357bda6c3a9df67f/console_linux.go.orig	2016-04-09 15:05:54.985912166 +0100
++++ libcontainer-c9643688cb73c2588a9c9b14357bda6c3a9df67f/console_linux.go	2016-04-09 15:06:34.444017814 +0100
+@@ -101,7 +101,7 @@
+ 	}
+ 	fd := int(slave.Fd())
+ 	for _, i := range []int{0, 1, 2} {
+-		if err := syscall.Dup2(fd, i); err != nil {
++		if err := syscall.Dup3(fd, i, 0); err != nil {
+ 			return err
+ 		}
+ 	}
+--- libcontainer-c9643688cb73c2588a9c9b14357bda6c3a9df67f/rootfs_linux.go.orig	2016-04-09 15:05:59.981925543 +0100
++++ libcontainer-c9643688cb73c2588a9c9b14357bda6c3a9df67f/rootfs_linux.go	2016-04-09 15:06:58.662082656 +0100
+@@ -272,7 +272,7 @@
+ 		}
+ 		if stat.Rdev == devNullStat.Rdev {
+ 			// Close and re-open the fd.
+-			if err := syscall.Dup2(int(file.Fd()), fd); err != nil {
++			if err := syscall.Dup3(int(file.Fd()), fd, 0); err != nil {
+ 				return err
+ 			}
+ 		}

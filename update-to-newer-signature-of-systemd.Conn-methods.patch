@@ -1,0 +1,64 @@
+From abba4886b183eef278b861c879c1e7c70aa3cb51 Mon Sep 17 00:00:00 2001
+From: Jan Chaloupka <jchaloup@redhat.com>
+Date: Thu, 17 Mar 2016 12:33:17 +0100
+Subject: [PATCH] update to newer signature of systemd.Conn methods
+
+---
+ cgroups/systemd/apply_systemd.go | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/cgroups/systemd/apply_systemd.go b/cgroups/systemd/apply_systemd.go
+index c278228..b7b0772 100644
+--- a/cgroups/systemd/apply_systemd.go
++++ b/cgroups/systemd/apply_systemd.go
+@@ -83,7 +83,7 @@ func UseSystemd() bool {
+ 		hasStartTransientUnit = true
+ 
+ 		// But if we get UnknownMethod error we don't
+-		if _, err := theConn.StartTransientUnit("test.scope", "invalid"); err != nil {
++		if _, err := theConn.StartTransientUnit("test.scope", "invalid", []systemd.Property{}, nil); err != nil {
+ 			if dbusError, ok := err.(dbus.Error); ok {
+ 				if dbusError.Name == "org.freedesktop.DBus.Error.UnknownMethod" {
+ 					hasStartTransientUnit = false
+@@ -98,7 +98,7 @@ func UseSystemd() bool {
+ 		scope := fmt.Sprintf("libcontainer-%d-systemd-test-default-dependencies.scope", os.Getpid())
+ 		testScopeExists := true
+ 		for i := 0; i <= testScopeWait; i++ {
+-			if _, err := theConn.StopUnit(scope, "replace"); err != nil {
++			if _, err := theConn.StopUnit(scope, "replace", nil); err != nil {
+ 				if dbusError, ok := err.(dbus.Error); ok {
+ 					if strings.Contains(dbusError.Name, "org.freedesktop.systemd1.NoSuchUnit") {
+ 						testScopeExists = false
+@@ -116,8 +116,9 @@ func UseSystemd() bool {
+ 
+ 		// Assume StartTransientUnit on a scope allows DefaultDependencies
+ 		hasTransientDefaultDependencies = true
+-		ddf := newProp("DefaultDependencies", false)
+-		if _, err := theConn.StartTransientUnit(scope, "replace", ddf); err != nil {
++		ddf := make([]systemd.Property, 0)
++		ddf = append(ddf, newProp("DefaultDependencies", false))
++		if _, err := theConn.StartTransientUnit(scope, "replace", ddf, nil); err != nil {
+ 			if dbusError, ok := err.(dbus.Error); ok {
+ 				if strings.Contains(dbusError.Name, "org.freedesktop.DBus.Error.PropertyReadOnly") {
+ 					hasTransientDefaultDependencies = false
+@@ -126,7 +127,7 @@ func UseSystemd() bool {
+ 		}
+ 
+ 		// Not critical because of the stop unit logic above.
+-		theConn.StopUnit(scope, "replace")
++		theConn.StopUnit(scope, "replace", nil)
+ 	}
+ 	return hasStartTransientUnit
+ }
+@@ -187,7 +188,7 @@ func (m *Manager) Apply(pid int) error {
+ 			newProp("BlockIOWeight", uint64(c.BlkioWeight)))
+ 	}
+ 
+-	if _, err := theConn.StartTransientUnit(unitName, "replace", properties...); err != nil {
++	if _, err := theConn.StartTransientUnit(unitName, "replace", properties, nil); err != nil {
+ 		return err
+ 	}
+ 
+-- 
+1.9.3
+
